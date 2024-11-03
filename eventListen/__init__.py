@@ -1,1 +1,3 @@
-from .eventListen import Events
+from eventListen import eventListen
+
+Events = eventListen.Events()

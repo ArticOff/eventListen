@@ -1,23 +1,36 @@
 from typing import Any, Callable
-
 from proto import proto
 
 with proto("Events") as Events:
     @Events
     def new(self):
+        self.obj = {}
         self.events = {}
         return
     
     @Events
-    def observe(self, func: Callable[[], Any]):
-        self.events[func.__name__] = func
-        return func
+    def observe(self, callback: Callable[[], Any]) -> Callable[[], Any]:
+        self.events[callback.__name__] = callback
+        return callback
 
     @Events
-    def trigger(self, event, *args, **kwargs) -> Any:
+    def trigger(self, event: str, *args, **kwargs) -> Any:
+        for obj in self.obj:
+            o = self.obj[obj]
+            for e in o:
+                if event == e.__name__:
+                    e(*args, **kwargs)
         if event in self.events:
-            return self.events[event](*args, **kwargs)
-        else:
-            raise NameError("Event %s not found." % event)
+            self.events[event](*args, **kwargs)
+        return 
 
+    @Events
+    def group(self, obj: object, events: list):
+        self.obj[obj] = events
+        return
+
+    @Events
+    def stopObserving(self, obj: object):
+        del self.obj[obj]
+        return
 
