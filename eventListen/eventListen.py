@@ -1,31 +1,33 @@
 from typing import Any, Callable
 from proto import proto
+from copy import copy
 
 with proto("Events") as Events:
     @Events
     def new(self):
         self.obj = {}
-        self.events = {}
+        self.events = []
         return
     
     @Events
     def observe(self, callback: Callable[[], Any]) -> Callable[[], Any]:
-        self.events[callback.__name__] = callback
+        self.events.append({"name": callback.__name__, "callback": callback})
         return callback
 
     @Events
     def trigger(self, event: str, *args, **kwargs) -> Any:
-        for obj in self.obj:
+        for obj in copy(self.obj):
+            if not obj in self.obj: return
             o = self.obj[obj]
-            for e in o:
-                if event == e.__name__:
-                    e(*args, **kwargs)
-        if event in self.events:
-            self.events[event](*args, **kwargs)
+            if event in o:
+                o[event](*args, **kwargs)
+        for e in self.events:
+            if e["name"] == event:
+                e["callback"](*args, **kwargs)
         return 
 
     @Events
-    def group(self, obj: object, events: list):
+    def group(self, obj: object, events: dict):
         self.obj[obj] = events
         return
 
