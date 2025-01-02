@@ -1,4 +1,6 @@
 from typing import Callable
+from copy import copy
+
 from proto import proto
 
 with proto("Events") as Events:
@@ -24,7 +26,8 @@ with proto("Events") as Events:
             if event in o:
                 o[event](*args, **kwargs)
         else:
-            for obj in self.obj:
+            for obj in copy(self.obj):
+                if not obj in self.obj: return
                 o = self.obj[obj]
                 if event in o:
                     o[event](*args, **kwargs)
