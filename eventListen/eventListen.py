@@ -1,4 +1,5 @@
 from typing import Callable
+from types import MethodType
 from copy import copy
 
 from proto import proto
@@ -18,20 +19,22 @@ with proto("Events") as Events:
 
     @Events
     def trigger(self, event: str, *args, **kwargs) -> None:
+        for obj in copy(self.obj):
+            if not obj in self.obj: return
+            o = self.obj[obj]
+            if event in o:
+                o[event](*args, **kwargs)
         for e in self.events:
             if e["name"] == event:
                 e["callback"](*args, **kwargs)
-        if self.priority:
-            o = self.obj[self.priority]
-            if event in o:
-                o[event](*args, **kwargs)
-        else:
-            for obj in copy(self.obj):
-                if not obj in self.obj: return
-                o = self.obj[obj]
-                if event in o:
-                    o[event](*args, **kwargs)
         return 
+    
+    @Events
+    def setEvent(self, obj: object, name: str, event: Callable[[object], None]) -> None:
+        if obj not in self.obj:
+            self.obj[obj] = {}
+        self.obj[obj].update({name: MethodType(event, obj)})
+        return
 
     @Events
     def group(self, obj: object, events: dict) -> None:
@@ -43,7 +46,3 @@ with proto("Events") as Events:
         del self.obj[obj]
         return
     
-    @Events
-    def setPriority(self, obj: object) -> None:
-        self.priority = obj if self.priority != obj else None
-        return
